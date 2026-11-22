@@ -48,16 +48,44 @@ Use **Supabase Dashboard -> Authentication -> Users -> Add user**, set temporary
 Then insert or update a matching `public.profiles` row for each Auth user UUID:
 
 ```sql
-insert into public.profiles(id, role, district_id, church_id, display_name)
+insert into public.profiles(id, full_name, role, district_id, church_id, is_active, must_change_password)
 values
-  ('<conference-auth-uuid>', 'conference', null, null, 'ORION Conference'),
-  ('<district-auth-uuid>', 'district', '20000000-0000-0000-0000-000000000001', null, 'Demo District Admin'),
-  ('<church-auth-uuid>', 'church', null, '30000000-0000-0000-0000-000000000001', 'Demo Church Treasurer')
+  ('<conference-auth-uuid>', 'ORION Conference', 'conference', null, null, true, true),
+  ('<district-auth-uuid>', 'Demo District Admin', 'district', '20000000-0000-0000-0000-000000000001', null, true, true),
+  ('<church-auth-uuid>', 'Demo Church Treasurer', 'church', null, '30000000-0000-0000-0000-000000000001', true, true)
 on conflict (id) do update set
+  full_name = excluded.full_name,
   role = excluded.role,
   district_id = excluded.district_id,
   church_id = excluded.church_id,
-  display_name = excluded.display_name;
+  is_active = excluded.is_active,
+  must_change_password = excluded.must_change_password;
 ```
 
 The UUID constants in `005_seed.sql` are placeholders and must be replaced with the real `auth.users.id` values. Temporary passwords must be changed after the first login. No fake Auth users or `public.profiles` rows are inserted by migration SQL.
+
+## Environment variables
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Never expose `SUPABASE_SERVICE_ROLE_KEY` to client code.
+
+## Local commands
+
+```bash
+npm install
+npm run dev
+npm test
+npm run lint
+npm run build
+```
+
+## Supabase setup
+
+Apply `supabase/migrations/001_schema.sql` through `005_seed.sql` in numeric order. Run `supabase/tests/rls_check.sql` against a test project.
+
+## Vercel deployment
+
+Configure all environment variables, import the repository, and deploy. Authentication redirect URLs must include the deployed origin.

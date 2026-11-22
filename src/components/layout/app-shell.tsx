@@ -38,6 +38,8 @@ export default function AppShell({ role, title, children }: AppShellProps) {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      const { orionDb } = await import("@/lib/offline/db");
+      await orionDb.delete();
       localStorage.clear();
       sessionStorage.clear();
     } finally {

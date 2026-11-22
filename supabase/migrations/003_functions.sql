@@ -204,12 +204,27 @@ begin
 end;
 $$;
 
+create or replace function public.log_export(p_entity_type text,p_entity_id uuid default null,p_details jsonb default '{}'::jsonb)
+returns bigint language plpgsql security definer set search_path=''
+as $$
+declare v_id bigint;
+begin
+  insert into public.audit_logs(actor_id,actor_role,action,entity_type,entity_id,church_id,district_id,details)
+  select auth.uid(),private.user_role(),'export',p_entity_type,p_entity_id,
+         private.user_church_id(),private.user_district_id(),coalesce(p_details,'{}'::jsonb)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
 revoke all on function public.submit_weekly_report(uuid) from public, anon;
 revoke all on function public.reopen_weekly_report(uuid,text) from public, anon;
 revoke all on function public.request_member_add(uuid,text,text,text,text,text) from public, anon;
 revoke all on function public.request_member_withdraw(uuid,text) from public, anon;
 revoke all on function public.review_member_request(uuid,boolean,text) from public, anon;
 revoke all on function public.log_audit(text,text,uuid,uuid,uuid,jsonb) from public, anon;
+revoke all on function public.log_export(text,uuid,jsonb) from public, anon;
+grant execute on function public.log_export(text,uuid,jsonb) to authenticated;
 grant execute on function public.submit_weekly_report(uuid) to authenticated;
 grant execute on function public.reopen_weekly_report(uuid,text) to authenticated;
 grant execute on function public.request_member_add(uuid,text,text,text,text,text) to authenticated;

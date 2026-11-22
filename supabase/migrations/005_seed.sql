@@ -62,6 +62,17 @@ begin
   end loop;
 end $$;
 
+-- SQL fixture: 301 pesewas is Conference 150 / Local 151.
+do $$
+declare v_conference bigint; v_local bigint;
+begin
+  v_conference:=floor(301 * 50::numeric / 100)::bigint;
+  v_local:=301-v_conference;
+  if v_conference<>150 or v_local<>151 then
+    raise exception 'Odd-pesewa fixture mismatch';
+  end if;
+end $$;
+
 insert into public.weekly_reports(
   id,church_id,sabbath_date,status,loose_offering,sabbath_school_offering,notes
 ) values(
