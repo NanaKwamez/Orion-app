@@ -1,0 +1,16 @@
+---
+description: ORION non-negotiable engineering rules
+globs:
+alwaysApply: true
+---
+
+# ORION non-negotiable rules
+
+- Use `supabase.auth.getUser()` on the server, never `getSession()`. Re-check fresh database role and scope in every server action, route, middleware decision, and export.
+- Never cache role in browser storage; use `router.push` for role-sensitive navigation and never `router.back()`.
+- Select listed columns only, destructure `{ data, error }`, display errors, and use try/catch/finally.
+- Money: integer pesewas in TypeScript, `numeric(12,2)` in Postgres, all calculation through `lib/money.ts`.
+- Zod validates server input; no SQL string interpolation; no `any`.
+- Every table has RLS, every reporting view is `security_invoker`, and every status-changing database function is fixed-search-path `SECURITY DEFINER`.
+- Never log member names or amounts or put member data in URLs/errors.
+- Data pages are dynamic; services use Africa/Accra; PWA sign-out clears all Dexie/browser storage before hard navigation to `/login`.
