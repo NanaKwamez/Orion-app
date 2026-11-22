@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Church, ClipboardCheck, Landmark, LayoutDashboard, Moon, Sun, Users } from "lucide-react";
+import { Church, ClipboardCheck, Landmark, LayoutDashboard, Moon, ScrollText, Sun, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 
 type AppShellProps = {
@@ -15,6 +15,7 @@ const links = {
     { href: "/conference", label: "Dashboard", icon: LayoutDashboard },
     { href: "/conference/districts", label: "Districts", icon: Landmark },
     { href: "/conference/settings", label: "Settings", icon: ClipboardCheck },
+    { href: "/conference/audit", label: "Audit", icon: ScrollText },
   ],
   district: [
     { href: "/district", label: "Dashboard", icon: LayoutDashboard },
