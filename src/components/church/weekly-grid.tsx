@@ -98,7 +98,7 @@ export default function WeeklyGrid(props: Props) {
     } finally {
       setSaving(false);
     }
-  }, [loose, props.members, props.reportId, props.status, sabbath, values]);
+  }, [loose, props.churchId, props.members, props.reportId, props.sabbathDate, props.status, sabbath, values]);
 
   useEffect(() => {
     void orionDb.drafts.get(props.reportId).then((draft) => {
@@ -135,7 +135,7 @@ export default function WeeklyGrid(props: Props) {
       window.clearInterval(timer);
       window.removeEventListener("online", reconnect);
     };
-  }, [saveDraft]);
+  }, [props.reportId, saveDraft]);
 
   async function submit() {
     if (!navigator.onLine) {

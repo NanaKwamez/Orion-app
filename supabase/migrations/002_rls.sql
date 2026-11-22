@@ -64,13 +64,11 @@ create policy members_district on public.members for select to authenticated
     private.church_district(church_id)=private.user_district_id());
 create policy members_church_select on public.members for select to authenticated
   using (private.user_role()='church' and church_id=private.user_church_id());
-create policy members_church_insert on public.members for insert to authenticated
-  with check (private.user_role()='church' and church_id=private.user_church_id());
 create policy members_church_update on public.members for update to authenticated
   using (private.user_role()='church' and church_id=private.user_church_id()
-    and status not in ('withdrawn','pending_withdrawal'))
+    and status!='withdrawn')
   with check (private.user_role()='church' and church_id=private.user_church_id()
-    and status not in ('withdrawn','pending_withdrawal'));
+    and status!='withdrawn');
 
 create policy requests_conference on public.member_change_requests for select to authenticated
   using (private.user_role()='conference');
@@ -162,5 +160,4 @@ grant insert (report_id,member_id,tithe,systematic,thanksgiving)
   on public.member_contributions to authenticated;
 grant update (tithe,systematic,thanksgiving) on public.member_contributions to authenticated;
 grant delete on public.member_contributions to authenticated;
-grant insert on public.members to authenticated;
 grant insert on public.distribution_rules to authenticated;
