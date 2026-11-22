@@ -26,6 +26,7 @@ const links = {
     { href: "/church", label: "Home", icon: LayoutDashboard },
     { href: "/church/members", label: "Members", icon: Users },
     { href: "/church/report", label: "Report", icon: ClipboardCheck },
+    { href: "/church/history", label: "History", icon: ScrollText },
   ],
 };
 

@@ -17,6 +17,16 @@ export function ghanaPesewas(amountGhs: number): number {
   return Math.round(amountGhs * 100);
 }
 
+export function parseGhsToPesewas(input: string): number {
+  const normalized = input.trim();
+  if (!normalized) return 0;
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) {
+    throw new Error("Enter a valid GHS amount");
+  }
+  const [whole, fraction = ""] = normalized.split(".");
+  return Number(whole) * 100 + Number((fraction + "00").slice(0, 2));
+}
+
 export function ghanaGhs(pesewas: number): number {
   if (!Number.isSafeInteger(pesewas) || pesewas < 0) {
     throw new Error("Invalid pesewa amount");
