@@ -17,6 +17,12 @@ export type OfflineDraft = {
   updatedAt: number;
 };
 
+export type OfflineSyncQueueItem = {
+  id?: number;
+  reportId: string;
+  createdAt: number;
+};
+
 const db = new Dexie("orion-finance");
 
 db.version(1).stores({
@@ -28,4 +34,5 @@ db.version(1).stores({
 export const orionDb = db as Dexie & {
   members: EntityTable<OfflineMember, "id">;
   drafts: EntityTable<OfflineDraft, "id">;
+  syncQueue: EntityTable<OfflineSyncQueueItem, "id">;
 };

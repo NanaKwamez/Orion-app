@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { getAuthenticatedProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import ReportActions from "@/components/district/report-actions";
 
 export default async function DistrictReportsPage() {
   const { profile, error } = await getAuthenticatedProfile();
@@ -15,8 +16,9 @@ export default async function DistrictReportsPage() {
   if (dataError) return <p role="alert" className="text-red-700">Unable to load reports.</p>;
   return <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
     <h2 className="font-semibold">District reports</h2>
+    <a href="/api/exports/district-reports" className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 dark:border-slate-700">Export CSV</a>
     {reports?.length ? <div className="mt-3 divide-y divide-slate-200 dark:divide-slate-800">{reports.map((report) =>
-      <div key={report.id} className="flex justify-between py-3"><span>{report.sabbath_date}</span><span>{report.status}</span></div>
+      <div key={report.id} className="flex flex-wrap items-center justify-between gap-2 py-3"><span>{report.sabbath_date}</span><span>{report.status}</span><ReportActions reportId={report.id} status={report.status} /></div>
     )}</div> : <p className="mt-3">No reports.</p>}
   </section>;
 }

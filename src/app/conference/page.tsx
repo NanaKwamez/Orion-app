@@ -18,6 +18,7 @@ export default async function ConferenceDashboard() {
   const localDue = (distributions ?? []).reduce((sum, row) => sum + Math.round(Number(row.local_amount) * 100), 0);
   return (
     <div className="space-y-4">
+      <a href="/api/exports/conference" className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 dark:border-slate-700">Export conference CSV</a>
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
           ["Conference due", conferenceDue],

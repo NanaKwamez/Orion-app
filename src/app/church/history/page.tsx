@@ -16,7 +16,8 @@ export default async function HistoryPage() {
     <h2 className="font-semibold">Submitted reports</h2>
     {reports?.length ? <div className="mt-3 divide-y divide-slate-200 dark:divide-slate-800">{reports.map((report) =>
       <a href={`/church/history/${report.id}`} key={report.id} className="flex min-h-11 items-center justify-between py-3">
-        <span>{report.sabbath_date}</span><span>{formatGhs(Math.round((Number(report.loose_offering)+Number(report.sabbath_school_offering))*100))}</span>
+        <span>{report.sabbath_date}</span>
+        <span className="flex items-center gap-3"><span>{formatGhs(Math.round((Number(report.loose_offering)+Number(report.sabbath_school_offering))*100))}</span><a href={`/api/exports/report/${report.id}/pdf`}>PDF</a></span>
       </a>
     )}</div> : <p className="mt-3">No submitted reports.</p>}
   </section>;

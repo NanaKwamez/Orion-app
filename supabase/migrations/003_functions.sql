@@ -225,6 +225,22 @@ revoke all on function public.review_member_request(uuid,boolean,text) from publ
 revoke all on function public.log_audit(text,text,uuid,uuid,uuid,jsonb) from public, anon;
 revoke all on function public.log_export(text,uuid,jsonb) from public, anon;
 grant execute on function public.log_export(text,uuid,jsonb) to authenticated;
+revoke all on function public.log_audit(text,text,uuid,uuid,uuid,jsonb) from public, anon;
+grant execute on function public.log_audit(text,text,uuid,uuid,uuid,jsonb) to authenticated;
+
+create or replace function public.log_login()
+returns bigint language plpgsql security definer set search_path=''
+as $$
+declare v_id bigint;
+begin
+  insert into public.audit_logs(actor_id,actor_role,action,entity_type,entity_id,details)
+  values(auth.uid(),private.user_role(),'login','profile',auth.uid(),'{}'::jsonb)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+revoke all on function public.log_login() from public, anon;
+grant execute on function public.log_login() to authenticated;
 grant execute on function public.submit_weekly_report(uuid) to authenticated;
 grant execute on function public.reopen_weekly_report(uuid,text) to authenticated;
 grant execute on function public.request_member_add(uuid,text,text,text,text,text) to authenticated;

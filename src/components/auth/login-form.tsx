@@ -30,6 +30,7 @@ export default function LoginForm() {
         setError("Sign-in failed. Check your email and password.");
         return;
       }
+      await supabase.rpc("log_login");
       router.push("/");
       router.refresh();
     } catch {

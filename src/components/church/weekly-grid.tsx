@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { distributePesewas, formatGhs, parseGhsToPesewas } from "@/lib/money";
+import { orionDb } from "@/lib/offline/db";
 
 type Member = { id: string; full_name: string; member_number: string | null };
 type Rule = { contribution_type: string; conference_pct: number; district_pct: number; local_pct: number };
+type Contribution = { member_id: string; tithe: number; systematic: number; thanksgiving: number };
 type Props = {
   reportId: string;
   churchId: string;
@@ -15,12 +17,24 @@ type Props = {
   initialSabbath: number;
   status: "draft" | "submitted";
   rules: Rule[];
+  initialContributions: Contribution[];
+  duplicateSabbath: boolean;
 };
 
 type GridValue = { tithe: string; systematic: string; thanksgiving: string };
 
 export default function WeeklyGrid(props: Props) {
-  const [values, setValues] = useState<Record<string, GridValue>>({});
+  const [values, setValues] = useState<Record<string, GridValue>>(() => {
+    const initial: Record<string, GridValue> = {};
+    for (const contribution of props.initialContributions) {
+      initial[contribution.member_id] = {
+        tithe: contribution.tithe ? String(contribution.tithe) : "",
+        systematic: contribution.systematic ? String(contribution.systematic) : "",
+        thanksgiving: contribution.thanksgiving ? String(contribution.thanksgiving) : "",
+      };
+    }
+    return initial;
+  });
   const [loose, setLoose] = useState(props.initialLoose ? String(props.initialLoose) : "");
   const [sabbath, setSabbath] = useState(props.initialSabbath ? String(props.initialSabbath) : "");
   const [saving, setSaving] = useState(false);
@@ -31,7 +45,29 @@ export default function WeeklyGrid(props: Props) {
   }
 
   const saveDraft = useCallback(async (showMessage: boolean) => {
-    if (props.status === "submitted" || !navigator.onLine) return;
+    if (props.status === "submitted") return;
+    const draftValues: Record<string, { tithe: number; systematic: number; thanksgiving: number }> = {};
+    for (const member of props.members) {
+      const row = values[member.id];
+      draftValues[member.id] = {
+        tithe: parseGhsToPesewas(row?.tithe ?? "") / 100,
+        systematic: parseGhsToPesewas(row?.systematic ?? "") / 100,
+        thanksgiving: parseGhsToPesewas(row?.thanksgiving ?? "") / 100,
+      };
+    }
+    await orionDb.drafts.put({
+      id: props.reportId,
+      churchId: props.churchId,
+      sabbathDate: props.sabbathDate,
+      looseOffering: parseGhsToPesewas(loose) / 100,
+      sabbathSchoolOffering: parseGhsToPesewas(sabbath) / 100,
+      values: draftValues,
+      updatedAt: Date.now(),
+    });
+    if (!navigator.onLine) {
+      if (showMessage) setMessage("Draft saved offline.");
+      return;
+    }
     setSaving(true);
     try {
       const supabase = createClient();
@@ -65,8 +101,35 @@ export default function WeeklyGrid(props: Props) {
   }, [loose, props.members, props.reportId, props.status, sabbath, values]);
 
   useEffect(() => {
+    void orionDb.drafts.get(props.reportId).then((draft) => {
+      if (!draft) return;
+      setLoose(draft.looseOffering ? String(draft.looseOffering) : "");
+      setSabbath(draft.sabbathSchoolOffering ? String(draft.sabbathSchoolOffering) : "");
+      setValues((current) => {
+        const restored = { ...current };
+        for (const [memberId, row] of Object.entries(draft.values)) {
+          restored[memberId] = {
+            tithe: row.tithe ? String(row.tithe) : "",
+            systematic: row.systematic ? String(row.systematic) : "",
+            thanksgiving: row.thanksgiving ? String(row.thanksgiving) : "",
+          };
+        }
+        return restored;
+      });
+    }).catch(() => undefined);
+  }, [props.reportId]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => saveDraft(false), 60_000);
-    const reconnect = () => { void saveDraft(false); };
+    const reconnect = () => {
+      void saveDraft(false).then(async () => {
+        const queued = await orionDb.syncQueue.where("reportId").equals(props.reportId).toArray();
+        if (!queued.length) return;
+        const supabase = createClient();
+        const { error } = await supabase.rpc("submit_weekly_report", { p_report_id: props.reportId });
+        if (!error) await orionDb.syncQueue.where("reportId").equals(props.reportId).delete();
+      });
+    };
     window.addEventListener("online", reconnect);
     return () => {
       window.clearInterval(timer);
@@ -76,9 +139,19 @@ export default function WeeklyGrid(props: Props) {
 
   async function submit() {
     if (!navigator.onLine) {
-      setMessage("Submission needs a connection.");
+      await orionDb.syncQueue.put({ reportId: props.reportId, createdAt: Date.now() });
+      setMessage("Submission queued. It will submit safely when connection returns.");
       return;
     }
+    const highAmount = [...Object.values(values).flatMap((row) => [
+      parseGhsToPesewas(row.tithe ?? ""),
+      parseGhsToPesewas(row.systematic ?? ""),
+      parseGhsToPesewas(row.thanksgiving ?? ""),
+    ]), parseGhsToPesewas(loose), parseGhsToPesewas(sabbath)]
+      .some((pesewas) => pesewas > 5_000_000);
+    if (highAmount && !window.confirm("An amount exceeds GHS 50,000. Confirm submission?")) return;
+    if (props.duplicateSabbath && !window.confirm("A report already exists for this Sabbath. Continue to reopen/edit this report?")) return;
+    if (!window.confirm("Submit this report? Submission locks the report and writes the distribution snapshot.")) return;
     setSaving(true);
     try {
       await saveDraft(false);

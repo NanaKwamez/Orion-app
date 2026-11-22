@@ -42,6 +42,15 @@ export async function POST(request: Request) {
       must_change_password: true,
     });
     if (profileInsertError) return NextResponse.json({ error: "Unable to link account." }, { status: 400 });
+    await admin.from("audit_logs").insert({
+      actor_id: userData.user.id,
+      actor_role: "conference",
+      action: "district_admin_created",
+      entity_type: "profile",
+      entity_id: created.user.id,
+      district_id: parsed.data.districtId,
+      details: { account_email: parsed.data.email },
+    });
     return NextResponse.json({ temporaryPassword: password });
   } catch {
     return NextResponse.json({ error: "Unable to create account." }, { status: 500 });

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import WeeklyGrid from "@/components/church/weekly-grid";
 
 type MemberRow = { id: string; full_name: string; member_number: string | null };
+type ContributionRow = { member_id: string; tithe: number; systematic: number; thanksgiving: number };
 
 export default async function WeeklyReportPage() {
   const { profile, error } = await getAuthenticatedProfile();
@@ -40,6 +41,15 @@ export default async function WeeklyReportPage() {
     .from("distribution_rules").select("contribution_type, conference_pct, district_pct, local_pct, effective_from")
     .lte("effective_from", sabbathDate).order("effective_from", { ascending: false });
   if (membersError || rulesError) return <p role="alert" className="text-red-700">Unable to load report inputs.</p>;
+  let initialContributions: ContributionRow[] = [];
+  if (existing) {
+    const { data: contributions, error: contributionsError } = await supabase
+      .from("member_contributions")
+      .select("member_id, tithe, systematic, thanksgiving")
+      .eq("report_id", existing.id);
+    if (contributionsError) return <p role="alert" className="text-red-700">Unable to load saved contributions.</p>;
+    initialContributions = (contributions ?? []) as ContributionRow[];
+  }
 
   const latestRules = ["tithe","systematic","thanksgiving","loose","sabbath_school"].map((type) =>
     rules?.find((rule) => rule.contribution_type === type),
@@ -54,5 +64,7 @@ export default async function WeeklyReportPage() {
     initialSabbath={existing ? Number(existing.sabbath_school_offering) : 0}
     status={existing?.status ?? "draft"}
     rules={latestRules}
+    initialContributions={initialContributions}
+    duplicateSabbath={Boolean(existing)}
   />;
 }
